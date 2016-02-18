@@ -22,4 +22,7 @@ setup(
         'Operating System :: OS Independent',
         'Topic :: Software Development :: Libraries :: Python Modules',
     ],
+    install_requires=[
+        'PyYAML',
+    ]
 )
