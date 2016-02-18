@@ -19,12 +19,16 @@
 Client Talk with beanstalk
 """
 import sys
+
 import yaml
 
-from beanstalk.connection import ConnectionPool
-from beanstalk.exceptions import BeanstalkConnectionError, BeanstalkCommandFailed, BeanstalkUnknownError, BeanstalkJobDeadlineSoon
-from beanstalk.job import Job
 from beanstalk import macro
+from beanstalk.connection import ConnectionPool
+from beanstalk.exceptions import (BeanstalkCommandFailed,
+                                  BeanstalkConnectionError,
+                                  BeanstalkJobDeadlineSoon,
+                                  BeanstalkUnknownError)
+from beanstalk.job import Job
 from beanstalk.protocol import Command, Response
 
 
@@ -68,9 +72,9 @@ class Beanstalk(object):
         job_id, size = self._request(connection, command, oks, errs)
         body = self._response(connection, int(size))
         self._connection_pool.release(connection)
-        return Job(int(job_id), body, reserved)
+        return Job(self, int(job_id), body, reserved)
 
-    def _request_yaml(self, command, oks, errs=(), reserved=True):
+    def _request_yaml(self, command, oks, errs=()):
         connection = self._connection_pool.pick_connection()
         job_id, size = self._request(connection, command, oks, errs)
         body = self._response(connection, int(size))
@@ -140,70 +144,70 @@ class Beanstalk(object):
 
     def using(self):
         """Return the tube currently being used."""
-        return self._request_value(Command.LIST_TUBE_USED, ['USING'])
+        return self._request_value(Command.LIST_TUBE_USED, (Response.USING, ))
 
     def use(self, name):
         """Use a given tube."""
-        return self._request_value('use %s\r\n' % name, (Response.USING, ))
+        return self._request_value(Command.USE % name, (Response.USING, ))
 
     def watching(self):
         """Return a list of all tubes being watched."""
-        return self._request_yaml(Command.LIST_TUBES_WATCHED, ['OK'])
+        return self._request_yaml(Command.LIST_TUBES_WATCHED, (Response.OK, ))
 
     def watch(self, name):
         """Watch a given tube."""
-        return int(self._request_value('watch %s\r\n' % name, ['WATCHING']))
+        return int(self._request_value(Command.WATCH % name, (Response.WATCHING, )))
 
     def ignore(self, name):
         """Stop watching a given tube."""
         try:
-            return int(self._request_value('ignore %s\r\n' % name,
-                                            ['WATCHING'],
-                                            ['NOT_IGNORED']))
+            return int(self._request_value(Command.IGNORE % name,
+                                           (Response.WATCHING, ),
+                                           (Response.NOT_IGNORED, )))
         except BeanstalkCommandFailed:
             return 1
 
     def stats(self):
         """Return a dict of beanstalkd statistics."""
-        return self._request_yaml('stats\r\n', ['OK'])
+        return self._request_yaml(Command.STATS, (Response.OK, ))
 
     def stats_tube(self, name):
         """Return a dict of stats about a given tube."""
-        return self._request_yaml('stats-tube %s\r\n' % name,
-                                   ['OK'],
-                                   ['NOT_FOUND'])
+        return self._request_yaml(Command.STATS_TUBE % name,
+                                  (Response.OK, ),
+                                  (Response.NOT_FOUND, ))
 
     def pause_tube(self, name, delay):
         """Pause a tube for a given delay time, in seconds."""
-        self._request_value('pause-tube %s %d\r\n' % (name, delay),
-                       ['PAUSED'],
-                       ['NOT_FOUND'])
+        self._request_value(Command.PAUSE_TUBE % (name, delay),
+                            (Response.PAUSED, ),
+                            (Response.NOT_FOUND, ))
 
     # -- job interactors --
 
     def delete(self, jid):
         """Delete a job, by job id."""
-        self._request_value('delete %d\r\n' % jid, ['DELETED'], ['NOT_FOUND'])
+        self._request_value(Command.DELETE_JOB % jid, (Response.DELETED, ), (Response.NOT_FOUND, ))
 
     def release(self, jid, priority=macro.PRIORITY, delay=0):
         """Release a reserved job back into the ready queue."""
-        self._request_value('release %d %d %d\r\n' % (jid, priority, delay),
-                       ['RELEASED', 'BURIED'],
-                       ['NOT_FOUND'])
+        self._request_value(Command.RELEASE_JOB % (jid, priority, delay),
+                            (Response.RELEASED, Response.BURIED, ),
+                            (Response.NOT_FOUND, ))
 
     def bury(self, jid, priority=macro.PRIORITY):
         """Bury a job, by job id."""
-        self._request_value('bury %d %d\r\n' % (jid, priority),
-                       ['BURIED'],
-                       ['NOT_FOUND'])
+        self._request_value(Command.BURY_JOB % (jid, priority),
+                            (Response.BURIED, ),
+                            (Response.NOT_FOUND, ))
 
     def touch(self, jid):
         """Touch a job, by job id, requesting more time to work on a reserved
         job before it expires."""
-        self._request_value('touch %d\r\n' % jid, ['TOUCHED'], ['NOT_FOUND'])
+        self._request_value(Command.TOUCH_JOB % jid, (Response.TOUCHED, ), (Response.NOT_FOUND, ))
 
     def stats_job(self, jid):
         """Return a dict of stats about a job, by job id."""
-        return self._request_yaml('stats-job %d\r\n' % jid,
-                                   ['OK'],
-                                   ['NOT_FOUND'])
+        return self._request_yaml(Command.STATS_JOB % jid,
+                                  (Response.OK, ),
+                                  (Response.NOT_FOUND, ))
