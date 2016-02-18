@@ -33,7 +33,18 @@ class Command(object):
     PEEK_BURIED = 'peek-buried\r\n'
     LIST_TUBES = 'list-tubes\r\n'
     LIST_TUBE_USED = 'list-tube-used\r\n'
+    USE = 'use %s\r\n'
     LIST_TUBES_WATCHED = 'list-tubes-watched\r\n'
+    WATCH = 'watch %s\r\n'
+    IGNORE = 'ignore %s\r\n'
+    STATS = 'stats\r\n'
+    STATS_TUBE = 'stats-tube %s\r\n'
+    PAUSE_TUBE = 'pause-tube %s %d\r\n'
+    DELETE_JOB = 'delete %d\r\n'
+    RELEASE_JOB = 'release %d %d %d\r\n'
+    BURY_JOB = 'bury %d %d\r\n'
+    TOUCH_JOB = 'touch %d\r\n'
+    STATS_JOB = 'stats-job %d\r\n'
 
 
 class Response(object):
@@ -49,7 +60,9 @@ class Response(object):
     TIMED_OUT = 'TIMED_OUT'
     KICKED = 'KICKED'
     USING = 'USING'
-
-
-
-
+    WATCHING = 'WATCHING'
+    NOT_IGNORED = 'NOT_IGNORED'
+    PAUSED = 'PAUSED'
+    DELETED = 'DELETED'
+    RELEASED = 'RELEASED'
+    TOUCHED = 'TOUCHED'

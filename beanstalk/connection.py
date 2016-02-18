@@ -23,8 +23,8 @@ import socket
 import threading
 from itertools import chain
 
-from beanstalk import protocol
 from beanstalk.exceptions import BeanstalkConnectionError
+from beanstalk.protocol import Command
 
 
 class Connection(object):
@@ -50,7 +50,7 @@ class Connection(object):
             return
 
         try:
-            self._socket.sendall(protocol.QUIT)
+            self._socket.sendall(Command.QUIT)
         except:
             pass
 
